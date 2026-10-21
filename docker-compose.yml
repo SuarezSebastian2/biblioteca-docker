@@ -1,0 +1,39 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: biblioteca-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: biblioteca
+      MYSQL_USER: biblio
+      MYSQL_PASSWORD: biblio123
+      TZ: America/Bogota
+    volumes:
+      - db_data:/var/lib/mysql                 # persistencia de datos
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootpass"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  web:
+    build: ./app
+    image: biblioteca-web:1.0
+    container_name: biblioteca-web
+    restart: unless-stopped
+    environment:
+      DB_HOST: db
+      DB_USER: biblio
+      DB_PASSWORD: biblio123
+      DB_NAME: biblioteca
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db_data:
